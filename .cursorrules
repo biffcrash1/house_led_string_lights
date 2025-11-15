@@ -1,0 +1,107 @@
+# C/ESP-IDF Project Rules
+
+## Code Style and Formatting
+
+### Function and Keyword Formatting
+- No space between keywords or function names and the opening parenthesis
+- One space after the opening parenthesis and one space before the closing parenthesis
+- Exception: Type casts have no spaces around the text within the parentheses
+- Remove spaces between parentheses of the same direction
+
+Examples:
+```c
+// Correct
+if(condition)
+{
+  function_call( arg1, arg2 );
+  int result = (int)value;
+}
+
+// Incorrect
+if (condition) {
+    function_call(arg1, arg2);
+    int result = ( int )value;
+}
+```
+
+### Indentation
+- Use 2 spaces for indentation
+- Align continuation lines appropriately
+
+### Braces
+- Opening brace on a new line
+- Closing brace on its own line at the same indentation level
+
+### Naming Conventions
+- Use snake_case for variables and functions
+- Use UPPER_SNAKE_CASE for constants and macros
+- Use descriptive names that indicate purpose
+
+### Comments
+- Use `/* */` for block comments
+- Use `//` for single-line comments
+- Comment complex logic and non-obvious code
+- Keep comments up-to-date with code changes
+
+## ESP-IDF Specific Guidelines
+
+### Error Handling
+- Always check return values from ESP-IDF functions
+- Use `ESP_ERROR_CHECK()` for critical errors that should abort
+- Use proper error logging with `ESP_LOGE()`, `ESP_LOGW()`, `ESP_LOGI()`, `ESP_LOGD()`, `ESP_LOGV()`
+
+### Memory Management
+- Be aware of stack sizes for tasks
+- Use heap allocation carefully (consider using `heap_caps_malloc()` for specific memory types)
+- Free allocated memory when no longer needed
+
+### GPIO Usage
+- Avoid GPIO pins 6-11 on ESP32-DevKitC-VE (reserved for SPI flash)
+- Document GPIO pin assignments in code comments
+- Use configuration values from Kconfig when possible
+
+### Task Management
+- Use FreeRTOS tasks appropriately
+- Set appropriate stack sizes
+- Use `vTaskDelay()` with `portTICK_PERIOD_MS` for delays
+
+### Logging
+- Use appropriate log levels
+- Include TAG for all log statements
+- Don't log in tight loops (performance impact)
+
+## Code Organization
+
+### File Structure
+- Include headers in order: standard C headers, ESP-IDF headers, project headers
+- Group related functions together
+- Keep functions focused and single-purpose
+
+### Documentation
+- Document public APIs
+- Include parameter descriptions
+- Document return values and error conditions
+
+## Build and Flash Operations
+
+- NEVER build the project automatically - only build when explicitly requested by the user
+- NEVER flash the board automatically - only flash when explicitly requested by the user
+- Wait for explicit user request before running `idf.py build` or `idf.py flash`
+- Do not build as part of code changes unless the user specifically asks
+
+## Git and Version Control
+
+- NEVER commit changes without explicit user request
+- Always let the user test functionality before committing
+- Never commit changes automatically - always ask first
+
+## Best Practices
+
+- Always test changes before committing
+- Keep functions small and focused
+- Avoid magic numbers - use named constants or configuration values
+- Handle edge cases and error conditions
+- Consider power consumption for battery-powered applications
+- Use const for values that don't change
+- Prefer local variables over global variables when possible
+

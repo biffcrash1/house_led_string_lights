@@ -1,0 +1,160 @@
+menu "Example Configuration"
+
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+    config LED_STRING_COUNT
+        int "Number of LED strings"
+        range 1 6
+        default 1
+        help
+            Number of LED strings to control (1-6)
+
+    menu "LED String 1 Configuration"
+        config LED_STRING_1_GPIO
+            int "LED String 1 GPIO number"
+            range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+            default 2
+            help
+                GPIO pin number for LED string 1
+
+        config LED_STRING_1_LED_COUNT
+            int "Number of LEDs in String 1"
+            range 1 300
+            default 50
+            help
+                Number of LEDs in string 1
+    endmenu
+
+    menu "LED String 2 Configuration"
+        depends on LED_STRING_COUNT >= 2
+        config LED_STRING_2_GPIO
+            int "LED String 2 GPIO number"
+            range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+            default 4
+            help
+                GPIO pin number for LED string 2
+
+        config LED_STRING_2_LED_COUNT
+            int "Number of LEDs in String 2"
+            range 1 300
+            default 50
+            help
+                Number of LEDs in string 2
+    endmenu
+
+    menu "LED String 3 Configuration"
+        depends on LED_STRING_COUNT >= 3
+        config LED_STRING_3_GPIO
+            int "LED String 3 GPIO number"
+            range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+            default 5
+            help
+                GPIO pin number for LED string 3
+
+        config LED_STRING_3_LED_COUNT
+            int "Number of LEDs in String 3"
+            range 1 300
+            default 50
+            help
+                Number of LEDs in string 3
+    endmenu
+
+    menu "LED String 4 Configuration"
+        depends on LED_STRING_COUNT >= 4
+        config LED_STRING_4_GPIO
+            int "LED String 4 GPIO number"
+            range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+            default 18
+            help
+                GPIO pin number for LED string 4
+
+        config LED_STRING_4_LED_COUNT
+            int "Number of LEDs in String 4"
+            range 1 300
+            default 50
+            help
+                Number of LEDs in string 4
+    endmenu
+
+    menu "LED String 5 Configuration"
+        depends on LED_STRING_COUNT >= 5
+        config LED_STRING_5_GPIO
+            int "LED String 5 GPIO number"
+            range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+            default 19
+            help
+                GPIO pin number for LED string 5
+
+        config LED_STRING_5_LED_COUNT
+            int "Number of LEDs in String 5"
+            range 1 300
+            default 50
+            help
+                Number of LEDs in string 5
+    endmenu
+
+    menu "LED String 6 Configuration"
+        depends on LED_STRING_COUNT >= 6
+        config LED_STRING_6_GPIO
+            int "LED String 6 GPIO number"
+            range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+            default 21
+            help
+                GPIO pin number for LED string 6
+
+        config LED_STRING_6_LED_COUNT
+            int "Number of LEDs in String 6"
+            range 1 300
+            default 50
+            help
+                Number of LEDs in string 6
+    endmenu
+
+    choice BLINK_LED_STRIP_BACKEND
+        prompt "LED strip backend peripheral"
+        default BLINK_LED_STRIP_BACKEND_RMT if SOC_RMT_SUPPORTED
+        default BLINK_LED_STRIP_BACKEND_SPI
+        help
+            Select the backend peripheral to drive the LED strips.
+
+        config BLINK_LED_STRIP_BACKEND_RMT
+            depends on SOC_RMT_SUPPORTED
+            bool "RMT"
+        config BLINK_LED_STRIP_BACKEND_SPI
+            bool "SPI"
+    endchoice
+
+    choice LED_STRING_UPDATE_PERIOD
+        prompt "LED string update period"
+        default LED_STRING_UPDATE_PERIOD_33MS
+        help
+            Select the LED string update period in milliseconds.
+            This controls how frequently the LED strings are refreshed.
+
+        config LED_STRING_UPDATE_PERIOD_16MS
+            bool "16ms (60 FPS)"
+        config LED_STRING_UPDATE_PERIOD_33MS
+            bool "33ms (30 FPS)"
+        config LED_STRING_UPDATE_PERIOD_50MS
+            bool "50ms (20 FPS)"
+        config LED_STRING_UPDATE_PERIOD_100MS
+            bool "100ms (10 FPS)"
+        config LED_STRING_UPDATE_PERIOD_200MS
+            bool "200ms (5 FPS)"
+        config LED_STRING_UPDATE_PERIOD_500MS
+            bool "500ms (2 FPS)"
+        config LED_STRING_UPDATE_PERIOD_1000MS
+            bool "1000ms (1 FPS)"
+    endchoice
+
+    config LED_STRING_UPDATE_PERIOD_MS
+        int
+        default 16 if LED_STRING_UPDATE_PERIOD_16MS
+        default 33 if LED_STRING_UPDATE_PERIOD_33MS
+        default 50 if LED_STRING_UPDATE_PERIOD_50MS
+        default 100 if LED_STRING_UPDATE_PERIOD_100MS
+        default 200 if LED_STRING_UPDATE_PERIOD_200MS
+        default 500 if LED_STRING_UPDATE_PERIOD_500MS
+        default 1000 if LED_STRING_UPDATE_PERIOD_1000MS
+
+endmenu
