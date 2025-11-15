@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 #include <stdio.h>
+#include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
@@ -21,6 +22,8 @@ static uint8_t s_led_state = 0;
 static led_strip_handle_t led_strips[CONFIG_LED_STRING_COUNT];
 
 #define BLINK_GPIO 27  // GPIO 27 for single LED output
+#define RAINBOW_PIXELS_PER_CYCLE 10.0f  // Number of pixels per full rainbow cycle
+#define RAINBOW_SECONDS_PER_PIXEL 4.0f  // Seconds for pattern to advance one pixel
 
 static int get_led_count( int string_index )
 {
@@ -62,36 +65,95 @@ static int get_led_count( int string_index )
   return led_count;
 }
 
-static void blink_led(void)
+/* Convert HSV to RGB */
+static void hsv_to_rgb( float h, float s, float v, uint8_t *r, uint8_t *g, uint8_t *b )
 {
-  /* If the addressable LED is enabled */
-  if( s_led_state )
+  int i;
+  float f, p, q, t;
+  
+  if( s == 0.0f )
   {
-    /* Set all LED strings to the same color */
-    for( int i = 0; i < CONFIG_LED_STRING_COUNT; i++ )
-    {
-      int led_count = get_led_count( i );
-      /* Set all LEDs in the string using RGB from 0 (0%) to 255 (100%) for each color */
-      for( int j = 0; j < led_count; j++ )
-      {
-        if( j >= led_count )
-        {
-          ESP_LOGE( TAG, "ERROR: Attempting to access index %d but led_count is %d for string %d", j, led_count, i );
-          break;
-        }
-        led_strip_set_pixel( led_strips[i], j, 127, 127, 127 );
-      }
-      /* Refresh the strip to send data */
-      led_strip_refresh( led_strips[i] );
-    }
+    /* Grayscale */
+    *r = *g = *b = (uint8_t)( v * 255.0f );
+    return;
   }
-  else
+  
+  h /= 60.0f;  /* Sector 0 to 5 */
+  i = (int)floorf( h );
+  f = h - i;  /* Fractional part of h */
+  p = v * ( 1.0f - s );
+  q = v * ( 1.0f - s * f );
+  t = v * ( 1.0f - s * ( 1.0f - f ) );
+  
+  switch( i )
   {
-    /* Set all LED strings off */
-    for( int i = 0; i < CONFIG_LED_STRING_COUNT; i++ )
+    case 0:
+      *r = (uint8_t)( v * 255.0f );
+      *g = (uint8_t)( t * 255.0f );
+      *b = (uint8_t)( p * 255.0f );
+      break;
+    case 1:
+      *r = (uint8_t)( q * 255.0f );
+      *g = (uint8_t)( v * 255.0f );
+      *b = (uint8_t)( p * 255.0f );
+      break;
+    case 2:
+      *r = (uint8_t)( p * 255.0f );
+      *g = (uint8_t)( v * 255.0f );
+      *b = (uint8_t)( t * 255.0f );
+      break;
+    case 3:
+      *r = (uint8_t)( p * 255.0f );
+      *g = (uint8_t)( q * 255.0f );
+      *b = (uint8_t)( v * 255.0f );
+      break;
+    case 4:
+      *r = (uint8_t)( t * 255.0f );
+      *g = (uint8_t)( p * 255.0f );
+      *b = (uint8_t)( v * 255.0f );
+      break;
+    default:  /* case 5 */
+      *r = (uint8_t)( v * 255.0f );
+      *g = (uint8_t)( p * 255.0f );
+      *b = (uint8_t)( q * 255.0f );
+      break;
+  }
+}
+
+/* Rainbow pattern function - smoothly sequences through colors moving down the string */
+static void rainbow_pattern( void )
+{
+  /* Get current time in milliseconds */
+  TickType_t current_tick = xTaskGetTickCount();
+  float time_seconds = (float)( current_tick * portTICK_PERIOD_MS ) / 1000.0f;
+  
+  /* Update all LED strings */
+  for( int i = 0; i < CONFIG_LED_STRING_COUNT; i++ )
+  {
+    int led_count = get_led_count( i );
+    
+    for( int j = 0; j < led_count; j++ )
     {
-      led_strip_clear( led_strips[i] );
+      /* Calculate hue for this pixel position */
+      /* Pattern moves down the string at 4 seconds per pixel */
+      /* Phase offset: each pixel is offset by its position to create the moving wave effect */
+      float phase_offset = (float)j * ( 360.0f / RAINBOW_PIXELS_PER_CYCLE );
+      /* Calculate speed: full cycle time = pixels_per_cycle * seconds_per_pixel */
+      float cycle_time = RAINBOW_PIXELS_PER_CYCLE * RAINBOW_SECONDS_PER_PIXEL;
+      float time_hue = fmodf( ( time_seconds / cycle_time ) * 360.0f, 360.0f );
+      float hue = fmodf( time_hue - phase_offset + 360.0f, 360.0f );
+      
+      /* Convert HSV to RGB */
+      /* Saturation = 1.0 (full color), Value = 0.15 (15% brightness) */
+      uint8_t r, g, b;
+      hsv_to_rgb( hue, 1.0f, 0.15f, &r, &g, &b );
+      
+      /* Set pixel color */
+      led_strip_set_pixel( led_strips[i], j, r, g, b );
     }
+    
+    /* Refresh the strip to send data */
+    led_strip_refresh( led_strips[i] );
   }
 }
 
@@ -215,8 +277,8 @@ void app_main(void)
   
   while (1)
   {
-    /* Update LED strips at configured period */
-    blink_led();
+    /* Update LED strips with rainbow pattern at configured period */
+    rainbow_pattern();
     
     /* Check if it's time to toggle the single LED (every 1000ms) */
     TickType_t current_tick = xTaskGetTickCount();
